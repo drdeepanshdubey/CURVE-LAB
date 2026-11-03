@@ -1,0 +1,667 @@
+<title>The Curve Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a pharmacokinetics lab notebook. Graph-paper ground, one live chart as the hero,
+   an inverted band for the flagship workshop, and a reply composer as the closing move. */
+:root{
+  --bg:#F4F7FB; --ink:#0E1530; --muted:#55607F; --grid:rgba(22,54,232,.08);
+  --blue:#1636E8; --signal:#E8480F; --band:rgba(22,54,232,.10); --card:#FFFFFF; --line:#D5DCEE;
+  --inv-bg:#0E1530; --inv-fg:#EEF1FF; --inv-muted:#A9B4DB; --inv-line:#2C376B; --on-blue:#FFFFFF; --g:#0A8F6A; --v:#7A3FE0;
+  --display:'Bricolage Grotesque','Arial Black',Arial,sans-serif;
+  --body:'Hanken Grotesk',Arial,Helvetica,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A0F22; --ink:#E8ECFF; --muted:#93A0C9; --grid:rgba(120,140,255,.10);
+    --blue:#8EA2FF; --signal:#FF7A45; --band:rgba(124,147,255,.14); --card:#111936; --line:#263058;
+    --inv-bg:#060A17; --inv-fg:#E8ECFF; --inv-muted:#93A0C9; --inv-line:#263058; --on-blue:#0A0F22; --g:#35D1A0; --v:#B58CFF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A0F22; --ink:#E8ECFF; --muted:#93A0C9; --grid:rgba(120,140,255,.10);
+  --blue:#8EA2FF; --signal:#FF7A45; --band:rgba(124,147,255,.14); --card:#111936; --line:#263058;
+  --inv-bg:#060A17; --inv-fg:#E8ECFF; --inv-muted:#93A0C9; --inv-line:#263058; --on-blue:#0A0F22; --g:#35D1A0; --v:#B58CFF;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background-color:var(--bg); color:var(--ink); font-family:var(--body); font-size:18px; line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.wrap{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);letter-spacing:-0.02em;line-height:1.02;margin:0;text-wrap:balance}
+h1{font-size:clamp(44px,8vw,104px);font-weight:800}
+h2{font-size:clamp(34px,5vw,64px);font-weight:800}
+h3{font-size:24px;font-weight:700;letter-spacing:-0.01em}
+p{margin:0;max-width:62ch}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--signal);outline-offset:3px}
+button,input,select{font:inherit;color:inherit}
+header.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px;flex-wrap:wrap}
+.mark{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-0.02em}
+.for{color:var(--muted);font-size:16px}
+.theme{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--muted);font-size:15px}
+
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+section[id]{scroll-margin-top:84px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.navbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:2px solid var(--ink)}
+.navbar .wrap{display:flex;align-items:center;gap:20px;padding-block:10px;flex-wrap:wrap}
+.navbar nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.navbar nav a{color:var(--ink);text-decoration:none;font-weight:700;font-size:15px;padding:8px 12px;border-radius:999px}
+.navbar nav a:hover{background:var(--band)}
+.cta{background:var(--signal);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;padding:10px 18px;font-size:16px;white-space:nowrap}
+.cta:hover{filter:brightness(1.08)}
+.iam{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.iam b{font-size:16px;margin-right:4px}
+.goal{grid-column:1/-1;border-top:2px solid var(--ink);padding:14px 20px;display:grid;gap:8px}
+.goal .t{font-weight:700}
+.bar{height:12px;border:2px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--bg)}
+.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .25s}
+.goal.done .bar i{background:var(--signal)}
+.goal.done .t::before{content:"Done. "}
+.cross{pointer-events:none}
+.cross line{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3}
+.cross text{font:700 12px var(--body);fill:var(--ink)}
+.cross .bg{fill:var(--card);stroke:var(--ink)}
+.ghost{fill:none;stroke:var(--muted);stroke-width:3;stroke-dasharray:6 6}
+.mbar{display:none}
+/* hero */
+.hero{padding-block:32px 72px;display:grid;gap:32px}
+.hero .lede{font-size:clamp(19px,2.2vw,24px);color:var(--muted);max-width:52ch}
+.lab{background:var(--card);border:2px solid var(--ink);border-radius:6px;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr)}
+.plot{padding:20px 20px 12px;min-width:0;border-right:2px solid var(--ink)}
+.plot svg{width:100%;height:auto;display:block}
+.plot .ax{fill:var(--muted);font:500 12px var(--body)}
+.plot .tick{stroke:var(--line);stroke-width:1}
+.plot .win{fill:var(--band)}
+.plot .winline{stroke:var(--blue);stroke-width:1.5;stroke-dasharray:5 5}
+.plot .curve{fill:none;stroke:var(--blue);stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
+.plot .area{fill:var(--band)}
+.plot .cmax{fill:var(--signal)}
+.plot .cmaxline{stroke:var(--signal);stroke-width:2;stroke-dasharray:4 5}
+.plot .lbl{fill:var(--blue);font:700 12px var(--body)}
+.plot .lblsig{fill:var(--signal);font:700 13px var(--body)}
+.controls{padding:20px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.ctl label{display:flex;justify-content:space-between;font-weight:700;font-size:15px;margin-bottom:6px}
+.ctl output{color:var(--blue);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--blue);height:28px}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--ink);background:transparent;border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:700;font-size:15px}
+.chip:hover{background:var(--ink);color:var(--bg)}
+.read{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:2px solid var(--ink)}
+.read div{padding:14px 20px;border-right:1px solid var(--line);min-width:0}
+.read div:last-child{border-right:0}
+.read dt{font-size:14px;color:var(--muted)}
+.read dd{margin:0;font-family:var(--display);font-weight:800;font-size:clamp(24px,3vw,36px);font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
+.read dd small{font-size:15px;font-weight:500;color:var(--muted);font-family:var(--body);letter-spacing:0}
+.verdict{grid-column:1/-1;padding:14px 20px;border-top:2px solid var(--ink);font-weight:700}
+.verdict.warn{background:var(--signal);color:#fff}
+.note{font-size:14px;color:var(--muted)}
+
+/* about */
+.about{padding-block:56px;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px;align-items:center}
+.photo{position:relative;border:2px solid var(--ink);border-radius:6px;background:var(--card);padding:12px 12px 56px;transform:rotate(-1.6deg);max-width:420px}
+.photo img{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;border-radius:2px}
+.photo figcaption{position:absolute;left:16px;right:16px;bottom:14px;font-family:var(--display);font-weight:700;font-size:20px;display:flex;justify-content:space-between;gap:12px}
+.photo figcaption span:last-child{color:var(--muted);font-family:var(--body);font-weight:500;font-size:15px;align-self:flex-end}
+.about h2{margin-bottom:20px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 32px;margin:28px 0 0;padding:0;list-style:none}
+.facts li{border-top:2px solid var(--ink);padding-top:8px}
+.facts b{font-family:var(--display);font-size:40px;font-weight:800;display:block;line-height:1}
+.facts span{color:var(--muted);font-size:16px}
+
+/* flagship */
+.flag{background:var(--inv-bg);color:var(--inv-fg);padding-block:72px}
+.flag .grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:48px;align-items:center}
+.flag .kick{font-weight:700;color:var(--signal);margin-bottom:14px}
+.flag h2{margin-bottom:20px}
+.flag p{color:var(--inv-muted)}
+.claim{margin-top:24px;border-left:5px solid var(--signal);padding:4px 0 4px 18px;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.2;color:var(--inv-fg);max-width:30ch}
+.body svg{width:100%;height:auto;display:block;max-width:420px;margin:0 auto}
+.node{cursor:pointer}
+.node circle{fill:var(--inv-bg);stroke:var(--inv-fg);stroke-width:3;transition:fill .15s}
+.node text{fill:var(--inv-fg);font:700 15px var(--body);text-anchor:middle;pointer-events:none}
+.node.on circle{fill:var(--signal);stroke:var(--signal)}
+.node.on text{fill:#fff}
+.link{stroke:var(--inv-line);stroke-width:3;stroke-dasharray:2 8;stroke-linecap:round}
+.organ-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 12px}
+.organ-tabs button{border:2px solid var(--inv-fg);background:transparent;color:var(--inv-fg);border-radius:999px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:15px}
+.organ-tabs button[aria-pressed=true]{background:var(--signal);border-color:var(--signal);color:#fff}
+#organText{min-height:5.5em;color:var(--inv-fg)}
+
+/* audiences */
+.aud{padding-block:72px 8px}
+.aud h2{margin-bottom:12px}
+.aud .sub{color:var(--muted);margin-bottom:24px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{border:2px solid var(--ink);border-bottom:0;background:transparent;border-radius:6px 6px 0 0;padding:10px 16px;font-weight:700;cursor:pointer;font-size:16px}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+.panel{border:2px solid var(--ink);border-radius:0 6px 6px 6px;background:var(--card);padding:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.panel h3{margin-bottom:10px}
+.panel ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.panel .who{color:var(--muted)}
+/* career map */
+.cm{padding-block:72px 8px}
+.cm h2{margin-bottom:12px}
+.cm .sub{color:var(--muted);margin-bottom:20px}
+.cmbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.cmbar input{flex:1 1 220px;max-width:340px;background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:8px 16px;min-height:44px}
+.cmgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.cc{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:14px 14px 16px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-width:0;transition:opacity .15s}
+.cc b{font-family:var(--display);font-size:18px;line-height:1.15;letter-spacing:-0.01em}
+.cc span{font-size:15px;color:var(--muted);line-height:1.4}
+.cc .tag{font-size:13px;font-weight:700;color:var(--blue)}
+.cc.sel{background:var(--ink);color:var(--bg)}
+.cc.sel span,.cc.sel .tag{color:var(--bg)}
+.cc.rel{border-color:var(--signal);box-shadow:0 0 0 2px var(--signal)}
+.cc.dim{opacity:.35}
+.cminfo{margin-top:14px;min-height:1.5em;font-weight:700}
+/* network */
+.net{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
+.netbox{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:8px;min-width:0}
+.netbox svg{width:100%;height:auto;display:block}
+.netbox .edge{stroke:var(--line);stroke-width:1}
+.netbox .edge.on{stroke:var(--signal);stroke-width:2.5}
+.netbox .nd{cursor:pointer;stroke:var(--card);stroke-width:2}
+.netbox .nd.sel{stroke:var(--ink);stroke-width:4}
+.netbox .nd.dim{opacity:.25}
+.n-P{fill:var(--blue)} .n-C{fill:var(--g)} .n-T{fill:var(--signal)} .n-B{fill:var(--v)} .n-H{fill:var(--ink)} .n-E{fill:var(--muted)}
+.netbox .cl{fill:var(--muted);font:700 15px var(--body);text-anchor:middle;pointer-events:none}
+.netbox .nl{fill:var(--ink);font:700 13px var(--body);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--card);stroke-width:4px}
+.ninfo{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ninfo h3{font-size:24px}
+.ninfo .tg{font-size:14px;font-weight:700;color:var(--blue)}
+.ninfo .jump{display:flex;flex-wrap:wrap;gap:6px}
+.ninfo .jump button{border:1.5px solid var(--ink);background:transparent;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;cursor:pointer}
+.book{background:var(--signal);color:#fff;text-decoration:none;font-weight:700;border-radius:6px;padding:12px 16px;text-align:center;display:block}
+.book:hover{filter:brightness(1.08)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:0 0 12px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+/* more workshops */
+.more{padding-block:72px}
+.more h2{margin-bottom:32px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.cards article{background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.cards .len{font-weight:700;color:var(--signal);font-size:15px}
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 0;padding:0;list-style:none}
+.steps li{border:1.5px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:700;font-size:15px}
+.doors{margin-top:24px;border:2px solid var(--ink);border-radius:6px;padding:24px;background:var(--card)}
+.doors ul{display:flex;flex-wrap:wrap;gap:10px;list-style:none;margin:14px 0 0;padding:0}
+.doors li{background:var(--blue);color:var(--on-blue);border-radius:6px;padding:8px 14px;font-weight:700}
+.doors li:nth-child(3){background:var(--signal);color:#fff}
+
+/* ask-check-apply */
+.act{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 0}
+.act button{border:2px solid var(--ink);background:transparent;border-radius:999px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:16px}
+.act button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.apanel{border:2px solid var(--ink);border-radius:6px;padding:16px;background:var(--bg);display:grid;gap:10px}
+.apanel[hidden]{display:none!important}
+.apanel label{font-weight:700;font-size:15px}
+.apanel textarea,.apanel select,.apanel input{width:100%;background:var(--card);border:2px solid var(--ink);border-radius:6px;padding:10px 12px;min-height:44px;font:inherit;color:inherit}
+.apanel textarea{min-height:96px;resize:vertical}
+.arow{display:flex;gap:10px;flex-wrap:wrap}
+.abtn{background:var(--signal);color:#fff;border:0;border-radius:6px;padding:12px 16px;font-weight:700;cursor:pointer;text-decoration:none;font-size:16px;display:inline-block}
+.abtn.alt{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+.astat{font-size:14px;color:var(--muted);min-height:1.3em}
+/* offer */
+.offer{padding-block:72px 40px}
+.offer .head{display:grid;gap:16px;margin-bottom:32px}
+.composer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border:2px solid var(--ink);border-radius:6px;background:var(--card);overflow:hidden}
+.composer .l{padding:24px;display:flex;flex-direction:column;gap:18px;border-right:2px solid var(--ink);min-width:0}
+.composer .r{padding:24px;background:var(--inv-bg);color:var(--inv-fg);display:flex;flex-direction:column;gap:14px;min-width:0}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{font-weight:700;margin-bottom:8px;padding:0}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.opt input{margin-top:6px;width:20px;height:20px;accent-color:var(--blue);flex:none}
+select,input[type=text],input[type=date]{width:100%;background:var(--bg);border:2px solid var(--ink);border-radius:6px;padding:10px 12px;min-height:44px}
+.msg{white-space:pre-wrap;background:rgba(255,255,255,.06);border:1px solid var(--inv-line);border-radius:6px;padding:16px;font-size:17px;flex:1;min-height:200px;overflow-wrap:anywhere}
+.btn{background:var(--signal);color:#fff;border:0;border-radius:6px;padding:14px 20px;font-weight:700;cursor:pointer;font-size:17px}
+.btn:hover{filter:brightness(1.08)}
+.status{min-height:1.4em;color:var(--inv-muted);font-size:15px}
+footer{padding-block:32px 64px;display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between;color:var(--muted);font-size:16px}
+footer b{color:var(--ink)}
+.cp{background:none;border:1px solid var(--line);border-radius:999px;padding:2px 12px;cursor:pointer;color:var(--blue);font-weight:700;font-size:14px;margin-left:8px}
+
+@media (max-width:860px){
+  .net{grid-template-columns:minmax(0,1fr)}
+  .navbar nav{display:none}
+  .navbar .wrap{justify-content:space-between}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--bg);border-top:2px solid var(--ink);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));justify-content:center}
+  .mbar .cta{width:100%;text-align:center}
+  body{padding-bottom:84px}
+  .panel{grid-template-columns:minmax(0,1fr)}
+  .lab{grid-template-columns:minmax(0,1fr)}
+  .plot{border-right:0;border-bottom:2px solid var(--ink)}
+  .read{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .read div:nth-child(2){border-right:0}
+  .read div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .about,.flag .grid,.composer,.cards{grid-template-columns:minmax(0,1fr)}
+  .composer .l{border-right:0;border-bottom:2px solid var(--ink)}
+  .photo{margin-inline:auto}
+}
+@media (prefers-reduced-motion:no-preference){
+  .curve{stroke-dasharray:2000;stroke-dashoffset:2000;animation:draw 1.6s ease-out .2s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+}
+</style>
+
+<div class="navbar"><div class="wrap">
+  <span class="mark">The Curve Lab</span>
+  <nav aria-label="Sections"><a href="#sim">Try the curve</a><a href="#about">About</a><a href="#careers">Career map</a><a href="#who">Who I work with</a><a href="#workshop">Flagship</a><a href="#offer">Offer</a></nav>
+  <button class="theme" id="themeBtn" type="button">Switch theme</button>
+  <a class="cta" href="#offer">Work with me</a>
+</div></div>
+<div class="mbar"><a class="cta" href="#offer">Work with me</a></div>
+<div class="wrap">
+  <p class="for" style="padding-block:14px 0">For students, scholars, scientists, industry teams and ventures</p>
+
+  <section class="hero" id="sim">
+    <h1>Every drug has a curve. Move it.</h1>
+    <p class="lede">This is what I teach: how dose, absorption and clearance shape the line a drug draws in the blood. Drag the sliders and watch the peak move.</p>
+    <div class="iam" id="iam" role="group" aria-label="Who are you"><b>I am a</b></div>
+
+    <div class="lab">
+      <div class="plot">
+        <svg id="chart" viewBox="0 0 640 380" role="img" aria-label="Plasma concentration against time for a simulated oral drug, with a shaded therapeutic window and the peak marked"></svg>
+        <p class="note">Simulated oral drug, one-compartment model. Teaching example, not a real medicine.</p>
+      </div>
+      <div class="controls">
+        <div class="ctl"><label for="dose">Dose <output id="doseO"></output></label><input id="dose" type="range" min="50" max="500" step="10" value="200"></div>
+        <div class="ctl"><label for="ka">Absorption speed <output id="kaO"></output></label><input id="ka" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+        <div class="ctl"><label for="cl">Clearance <output id="clO"></output></label><input id="cl" type="range" min="2" max="20" step="0.5" value="6"></div>
+        <div class="presets" role="group" aria-label="Presets">
+          <button class="chip" type="button" data-p="fast">Fast absorption</button>
+          <button class="chip" type="button" data-p="slow">Slow release</button>
+          <button class="chip" type="button" data-p="kidney">Weak kidneys</button>
+          <button class="chip" type="button" data-p="reset">Reset</button>
+          <button class="chip" type="button" id="pinBtn">Pin this curve</button>
+        </div>
+      </div>
+      <div class="read" style="grid-column:1/-1">
+        <div><dt>Peak (Cmax)</dt><dd id="rCmax"></dd></div>
+        <div><dt>Time to peak</dt><dd id="rTmax"></dd></div>
+        <div><dt>Total exposure (AUC)</dt><dd id="rAuc"></dd></div>
+        <div><dt>Hours in window</dt><dd id="rWin"></dd></div>
+      </div>
+      <div class="verdict" id="verdict" role="status"></div>
+      <div class="goal" id="goal"><div class="t" id="goalT">Challenge: keep the drug in the window for 12 hours or more.</div><div class="bar"><i id="goalBar"></i></div><div class="note" id="goalH">Tip: a bigger dose lasts longer but raises the peak. Slower clearance also helps.</div></div>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <figure class="photo">
+      <img src="__PHOTO__" alt="Deepansh Dubey in a white blazer, standing between palm trees" width="900" height="1200">
+      <figcaption><span>Deepansh Dubey</span><span>Jabalpur</span></figcaption>
+    </figure>
+    <div>
+      <h2>I teach pharmacy students what I learned at NIPER Mohali.</h2>
+      <p>B.Pharm 2026, now doing my M.Pharm. I work on computational pharmaceutics: models that predict how a drug moves through the body before anyone swallows it. I would like to bring that, and the career skills around it, to your students.</p>
+      <ul class="facts">
+        <li><b>36</b><span>credit-hours of computational pharmaceutics at NIPER Mohali</span></li>
+        <li><b>2</b><span>IEEE conference papers, co-authored</span></li>
+        <li><b>6</b><span>published PBPK models replicated</span></li>
+        <li><b>11</b><span>AI-in-pharma projects on GitHub</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="aud" id="who">
+    <h2>Who I work with</h2>
+    <p class="sub">The same curve sits under a first-year lab, a PhD thesis, a pharma plant and a startup pitch. Pick your world.</p>
+    <div class="tabs" role="tablist" id="audTabs"></div>
+    <div class="panel" id="audPanel" role="tabpanel"></div>
+  </section>
+</div>
+
+<section class="flag" id="workshop">
+  <div class="wrap grid">
+    <div>
+      <p class="kick">Flagship workshop · half day</p>
+      <h2>See inside a drug before it exists.</h2>
+      <p>Students treat the body as connected compartments, open a real published PBPK model, and run one themselves on a free tool. Tap an organ to see what it does in the model.</p>
+      <div class="organ-tabs" id="organTabs" role="group" aria-label="Body compartments"></div>
+      <p id="organText" aria-live="polite"></p>
+      <p class="claim">Taught after NIPER Mohali. To my knowledge, one of a kind in India.</p>
+    </div>
+    <div class="body">
+      <svg viewBox="0 0 360 360" role="img" aria-label="Five body compartments, gut, liver, tissues and kidney, each linked to a central blood compartment">
+        <g id="links"></g>
+        <g id="nodes"></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <section class="cm" id="careers">
+    <h2>Every path after B.Pharm, and how they connect.</h2>
+    <p class="sub">Tap any option. The ones it connects to light up. Filter by area or search by name.</p>
+    <p class="legend" id="legend"></p>
+    <div class="net"><div class="netbox"><svg id="netsvg" viewBox="0 0 1000 760" role="group" aria-label="Career network. Each dot is a career, lines join related careers."></svg></div><div class="ninfo" id="ninfo" role="status"></div></div>
+    <div class="cmbar" id="cmbar"></div>
+    <div class="cminfo" id="cminfo" role="status"></div>
+    <div class="cmgrid" id="cmgrid"></div>
+  </section>
+
+  <section class="more">
+    <h2>Two more sessions, and the doors they open.</h2>
+    <div class="cards">
+      <article>
+        <span class="len">60 minutes</span>
+        <h3>AI as your lab partner</h3>
+        <p>Students learn to ask a good question, check every answer against a trusted source, and apply it to a real pharmacy case, live in class.</p>
+        <div class="act" role="group" aria-label="Ask, Check or Apply"><button type="button" data-m="ask" aria-pressed="false">Ask</button><button type="button" data-m="check" aria-pressed="false">Check</button><button type="button" data-m="apply" aria-pressed="false">Apply</button></div>
+        <div class="apanel" id="apanel" hidden></div>
+      </article>
+      <article>
+        <span class="len">90 minutes</span>
+        <h3>The LinkedIn profile clinic</h3>
+        <p>A headline that says what they do, projects a recruiter can open, and a network built with short, honest notes. Every student edits their own profile in the room.</p>
+        <ul class="steps"><li>Headline</li><li>Proof</li><li>Network</li></ul>
+      </article>
+    </div>
+    <div class="doors">
+      <h3>Five career paths most pharmacy students never hear about</h3>
+      <ul><li>Regulatory affairs</li><li>Pharmacovigilance</li><li>Computational pharmaceutics</li><li>Health economics</li><li>Higher studies abroad</li></ul>
+    </div>
+  </section>
+
+  <section class="offer" id="offer">
+    <div class="head">
+      <h2>I would like to work with you. Start with one group.</h2>
+      <p><a class="book" style="display:inline-block;margin-bottom:12px" href="https://topmate.io/deepansh_dubey" target="_blank" rel="noopener">Prefer a call first? Book a consultation</a><br>Choose what suits your group. The reply on the right writes itself; copy it and send it to me. You set the batch and the date, and we agree terms together.</p>
+    </div>
+    <div class="composer">
+      <div class="l">
+        <fieldset>
+          <legend>Sessions for the pilot</legend>
+          <label class="opt"><input type="checkbox" id="s1" checked><span>Computational pharmaceutics workshop (half day)</span></label>
+          <label class="opt"><input type="checkbox" id="s2"><span>AI as your lab partner (60 minutes)</span></label>
+          <label class="opt"><input type="checkbox" id="s3"><span>LinkedIn profile clinic (90 minutes)</span></label>
+        </fieldset>
+        <fieldset>
+          <legend>Other ways to work together</legend>
+          <label class="opt"><input type="checkbox" id="w1"><span>Guest lectures for the Pharmacy department</span></label>
+          <label class="opt"><input type="checkbox" id="w2"><span>Joint sessions with the placement cell</span></label>
+          <label class="opt"><input type="checkbox" id="w3"><span>Student mentoring as a visiting resource person</span></label>
+          <label class="opt"><input type="checkbox" id="w4"><span>Research and paper-writing guidance</span></label>
+          <label class="opt"><input type="checkbox" id="w5"><span>Modelling or AI project collaboration</span></label>
+        </fieldset>
+        <div><label for="batch" style="font-weight:700;display:block;margin-bottom:6px">Group</label>
+          <select id="batch"><option>B.Pharm final year</option><option>B.Pharm third year</option><option>D.Pharm</option><option>M.Pharm</option><option>PhD scholars</option><option>Scientists and industry team</option><option>Venture or startup team</option><option>Mixed group</option></select></div>
+        <div><label for="date" style="font-weight:700;display:block;margin-bottom:6px">Preferred date</label><input type="date" id="date"></div>
+        <div><label for="who" style="font-weight:700;display:block;margin-bottom:6px">Your name</label><input type="text" id="who" placeholder="Your name"></div>
+        <div><label for="org" style="font-weight:700;display:block;margin-bottom:6px">Organisation</label><input type="text" id="org" placeholder="College, company or venture"></div>
+      </div>
+      <div class="r">
+        <h3>Your reply</h3>
+        <div class="msg" id="msg"></div>
+        <button class="btn" id="copyBtn" type="button">Copy reply</button>
+        <p class="status" id="status" role="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span><b>Deepansh Dubey</b> · Pharmacist, Jabalpur</span>
+    <span>drx.deepanshdubey@gmail.com<button class="cp" type="button" data-copy="drx.deepanshdubey@gmail.com">Copy</button></span>
+    <span>linkedin.com/in/deepanshdubey1<button class="cp" type="button" data-copy="linkedin.com/in/deepanshdubey1">Copy</button></span>
+    <span>drdeepanshdubey.github.io</span>
+    <span><a href="https://topmate.io/deepansh_dubey" target="_blank" rel="noopener">Book a call on Topmate</a></span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  /* ---- theme ---- */
+  $('themeBtn').addEventListener('click',function(){
+    var r=document.documentElement, cur=r.getAttribute('data-theme');
+    var dark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-theme',dark?'light':'dark');
+  });
+  /* ---- PK model ---- */
+  var V=40,F=0.8,MEC=1.2,MTC=5,YMAX=8,TMAX=24;
+  var W=640,H=380,L=52,R=16,T=18,B=44, pw=W-L-R, ph=H-T-B;
+  var el={dose:$('dose'),ka:$('ka'),cl:$('cl')}, pinned=null, last=null;
+  function X(t){return L+t/TMAX*pw} function Y(c){return T+ph-(Math.min(c,YMAX)/YMAX)*ph}
+  function conc(t,D,ka,ke){ if(Math.abs(ka-ke)<1e-3)ka=ke+1e-3; return F*D/V*ka/(ka-ke)*(Math.exp(-ke*t)-Math.exp(-ka*t)); }
+  function draw(){
+    var D=+el.dose.value,ka=+el.ka.value,CL=+el.cl.value,ke=CL/V;
+    if(Math.abs(ka-ke)<1e-3)ka=ke+1e-3;
+    $('doseO').textContent=D+' mg'; $('kaO').textContent=ka.toFixed(1)+' per h'; $('clO').textContent=CL.toFixed(1)+' L/h';
+    var tmax=Math.log(ka/ke)/(ka-ke), cmax=conc(tmax,D,ka,ke), auc=F*D/CL;
+    var inWin=0,step=0.05; for(var t=0;t<=TMAX;t+=step){var c=conc(t,D,ka,ke); if(c>=MEC&&c<=MTC)inWin+=step;}
+    var pts=[]; for(var i=0;i<=240;i++){var tt=i/10; pts.push([X(tt),Y(conc(tt,D,ka,ke))]);}
+    var path=pts.map(function(p,i){return(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}).join('');
+    var s='';
+    for(var y=0;y<=YMAX;y+=2){s+='<line class="tick" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(y)+'" y2="'+Y(y)+'"/><text class="ax" x="'+(L-8)+'" y="'+(Y(y)+4)+'" text-anchor="end">'+y+'</text>';}
+    for(var x=0;x<=TMAX;x+=4){s+='<line class="tick" x1="'+X(x)+'" x2="'+X(x)+'" y1="'+T+'" y2="'+(T+ph)+'"/><text class="ax" x="'+X(x)+'" y="'+(T+ph+20)+'" text-anchor="middle">'+x+'</text>';}
+    s+='<text class="ax" x="'+(L+pw/2)+'" y="'+(H-6)+'" text-anchor="middle">Hours after the dose</text>';
+    s+='<text class="ax" transform="translate(13 '+(T+ph/2)+') rotate(-90)" text-anchor="middle">Drug in blood (mg/L)</text>';
+    s+='<rect class="win" x="'+L+'" y="'+Y(MTC)+'" width="'+pw+'" height="'+(Y(MEC)-Y(MTC))+'"/>';
+    s+='<line class="winline" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(MTC)+'" y2="'+Y(MTC)+'"/><line class="winline" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(MEC)+'" y2="'+Y(MEC)+'"/>';
+    s+='<text class="lbl" x="'+(W-R-6)+'" y="'+(Y(MTC)-6)+'" text-anchor="end">Toxic above this line</text><text class="lbl" x="'+(W-R-6)+'" y="'+(Y(MEC)+16)+'" text-anchor="end">Works above this line</text>';
+    if(pinned) s+='<path class="ghost" d="'+pinned+'"/><text class="ax" x="'+(L+8)+'" y="'+(T+14)+'">Dashed line: pinned curve</text>';
+    s+='<path class="area" d="'+path+'L'+X(TMAX)+' '+Y(0)+'L'+X(0)+' '+Y(0)+'Z" opacity=".55"/>';
+    s+='<path class="curve" d="'+path+'"/>';
+    var cx=X(tmax),cy=Y(cmax);
+    s+='<line class="cmaxline" x1="'+cx+'" x2="'+cx+'" y1="'+cy+'" y2="'+Y(0)+'"/><circle class="cmax" cx="'+cx+'" cy="'+cy+'" r="8"/>';
+    var lx=cx>W-150?cx-14:cx+14, anchor=cx>W-150?'end':'start';
+    s+='<text class="lblsig" x="'+lx+'" y="'+(Math.max(cy-12,T+12))+'" text-anchor="'+anchor+'">Cmax '+cmax.toFixed(1)+'</text>';
+    s+='<g class="cross" id="cross"></g>';
+    $('chart').innerHTML=s; last={D:D,ka:ka,ke:ke,path:path};
+    $('rCmax').innerHTML=cmax.toFixed(1)+' <small>mg/L</small>';
+    $('rTmax').innerHTML=tmax.toFixed(1)+' <small>h</small>';
+    $('rAuc').innerHTML=auc.toFixed(0)+' <small>mg·h/L</small>';
+    $('rWin').innerHTML=inWin.toFixed(1)+' <small>of 24 h</small>';
+    var g=$('goal'),pct=Math.min(100,inWin/12*100);
+    $('goalBar').style.width=pct+'%';
+    if(inWin>=12&&cmax<=MTC&&cmax>=MEC){g.classList.add('done');$('goalT').textContent='You kept the drug in the window for '+inWin.toFixed(1)+' hours without crossing the toxic line. That is dose tuning.';$('goalH').textContent='Pin this curve, then try a faster absorption to see what you give up.';}
+    else{g.classList.remove('done');$('goalT').textContent='Challenge: keep the drug in the window for 12 hours or more. Now at '+inWin.toFixed(1)+' h.';$('goalH').textContent=cmax>MTC?'The peak is too high. Lower the dose, then slow the clearance.':'Tip: a bigger dose lasts longer but raises the peak. Slower clearance also helps.';}
+    var v=$('verdict');
+    if(cmax>MTC){v.textContent='The peak crosses the toxic line. Lower the dose or slow the absorption.';v.className='verdict warn';}
+    else if(cmax<MEC){v.textContent='The drug never reaches an effective level. Raise the dose or slow the clearance.';v.className='verdict warn';}
+    else{v.textContent='The peak sits inside the window. Move the sliders and see how long it stays there.';v.className='verdict';}
+  }
+  var presets={fast:[200,2.8,6],slow:[300,0.3,6],kidney:[200,1,2.5],reset:[200,1,6]};
+  document.querySelectorAll('.chip').forEach(function(b){b.addEventListener('click',function(){var p=presets[b.dataset.p];el.dose.value=p[0];el.ka.value=p[1];el.cl.value=p[2];draw();});});
+  ['dose','ka','cl'].forEach(function(k){el[k].addEventListener('input',draw)});
+  draw();
+  $('pinBtn').addEventListener('click',function(){ if(!pinned&&last){pinned=last.path;this.textContent='Clear pinned curve';}else{pinned=null;this.textContent='Pin this curve';} draw(); });
+  var svgEl=$('chart');
+  function moveX(ev){
+    if(!last)return; var r=svgEl.getBoundingClientRect(); var px=(ev.clientX-r.left)/r.width*W;
+    var t=(px-L)/pw*TMAX; if(t<0||t>TMAX){$('cross').innerHTML='';return;}
+    var c=conc(t,last.D,last.ka,last.ke), x=X(t), y=Y(c), tx=x>W-130?x-122:x+10;
+    $('cross').innerHTML='<line x1="'+x+'" x2="'+x+'" y1="'+T+'" y2="'+(T+ph)+'"/><circle cx="'+x+'" cy="'+y+'" r="5" fill="var(--ink)"/><rect class="bg" x="'+tx+'" y="'+(T+6)+'" width="112" height="38" rx="4"/><text x="'+(tx+8)+'" y="'+(T+22)+'">'+t.toFixed(1)+' h after dose</text><text x="'+(tx+8)+'" y="'+(T+38)+'">'+c.toFixed(2)+' mg/L</text>';
+  }
+  svgEl.addEventListener('pointermove',moveX);
+  svgEl.addEventListener('pointerdown',moveX);
+  svgEl.addEventListener('pointerleave',function(){$('cross').innerHTML='';});
+
+  /* ---- body model ---- */
+  var organs=[
+    {id:'Gut',x:70,y:70,t:'Where an oral dose dissolves and is absorbed. Solubility, pH and food change how fast the drug reaches the blood.'},
+    {id:'Liver',x:290,y:70,t:'First-pass metabolism happens here. Part of the dose can be cleared before it reaches the rest of the body.'},
+    {id:'Tissues',x:70,y:290,t:'Where the drug spreads out of the blood. Volume of distribution comes from this compartment.'},
+    {id:'Kidney',x:290,y:290,t:'Clears the drug and its metabolites. Weaker kidney function raises exposure, as the Weak kidneys preset shows above.'},
+    {id:'Blood',x:180,y:180,t:'The central pool. The curve at the top of this page is the concentration in this compartment over time.'}
+  ];
+  var cur='Blood';
+  function renderBody(){
+    var l='',n='',tabs='';
+    organs.forEach(function(o){ if(o.id!=='Blood') l+='<line class="link" x1="180" y1="180" x2="'+o.x+'" y2="'+o.y+'"/>'; });
+    organs.forEach(function(o){
+      var r=o.id==='Blood'?52:42;
+      n+='<g class="node'+(o.id===cur?' on':'')+'" data-o="'+o.id+'" tabindex="0" role="button" aria-label="'+o.id+'"><circle cx="'+o.x+'" cy="'+o.y+'" r="'+r+'"/><text x="'+o.x+'" y="'+(o.y+5)+'">'+o.id+'</text></g>';
+      tabs+='<button type="button" data-o="'+o.id+'" aria-pressed="'+(o.id===cur)+'">'+o.id+'</button>';
+    });
+    $('links').innerHTML=l; $('nodes').innerHTML=n; $('organTabs').innerHTML=tabs;
+    $('organText').textContent=organs.filter(function(o){return o.id===cur})[0].t;
+    document.querySelectorAll('[data-o]').forEach(function(e){
+      var go=function(){cur=e.dataset.o;renderBody();};
+      e.addEventListener('click',go);
+      e.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go();}});
+    });
+  }
+  renderBody();
+
+  /* ---- audiences ---- */
+  var aud=[
+    {k:'Students',who:'B.Pharm and D.Pharm',a:['Computational pharmaceutics workshop, half day','AI as your lab partner','LinkedIn profile clinic','Career paths: regulatory, pharmacovigilance, health economics, study abroad']},
+    {k:'M.Pharm and PhD',who:'Scholars and thesis students',a:['Hands-on PBPK and IVIVC modelling, from a published model to your own','Research and paper-writing guidance, from my two IEEE papers','AI tools for literature review and data handling, with verification built in']},
+    {k:'Scientists and industry',who:'R&D, formulation and regulatory teams',a:['PBPK and PBBM upskilling workshops for teams','AI in pharma sessions with real workflows','Modelling support scoped project by project']},
+    {k:'Ventures',who:'Pharma-tech founders and startups',a:['Prototype pharma-AI tools, like the ones on my GitHub','Domain review of a product idea from a pharmacist and modeller','Collaboration on pilots and proofs of concept']},
+    {k:'Institutions',who:'Colleges, placement cells, associations',a:['Guest lectures and workshop series','Joint sessions with the placement cell','Mentoring as a visiting resource person']}
+  ];
+  var ai=0;
+  function renderAud(){
+    var tb='';aud.forEach(function(x,i){tb+='<button type="button" role="tab" aria-selected="'+(i===ai)+'" data-i="'+i+'">'+x.k+'</button>'});
+    $('audTabs').innerHTML=tb;
+    var x=aud[ai];
+    $('audPanel').innerHTML='<div><h3>'+x.k+'</h3><p class="who">'+x.who+'</p></div><ul>'+x.a.map(function(s){return '<li>'+s+'</li>'}).join('')+'</ul>';
+    document.querySelectorAll('#audTabs button').forEach(function(b){b.addEventListener('click',function(){ai=+b.dataset.i;renderAud();setGroup(ai);})});
+  }
+  var groupFor=['B.Pharm final year','M.Pharm','Scientists and industry team','Venture or startup team','Mixed group'];
+  function setGroup(i){ var s=$('batch'); if(s){s.value=groupFor[i];} if(typeof compose==='function')compose(); }
+  renderAud();
+  var iamLabels=['Student','M.Pharm or PhD scholar','Scientist or industry professional','Founder','College or association'];
+  $('iam').insertAdjacentHTML('beforeend',iamLabels.map(function(l,i){return '<button type="button" class="chip" data-a="'+i+'">'+l+'</button>'}).join(''));
+  document.querySelectorAll('#iam .chip').forEach(function(b){b.addEventListener('click',function(){ai=+b.dataset.a;renderAud();setGroup(ai);$('who').scrollIntoView({behavior:'smooth'});});});
+
+  /* ---- career map ---- */
+  var CM=[["mfg","Production and manufacturing","P","Run and scale the making of tablets, injectables and more under GMP.",["qa","qc","sc"]],["qa","Quality assurance","P","Own documentation, audits and compliance so every batch is release-ready.",["qc","ra","mfg","auto"]],["qc","Quality control and analytical testing","P","Test raw materials and finished products with HPLC, dissolution and other methods.",["qa","ard","mfg"]],["fd","Formulation development (F&D)","P","Design the dosage form: what goes in, how it releases, how it stays stable.",["pbpk","ard","ra","cadd"]],["ard","Analytical R&D","P","Develop and validate the methods that prove a drug is what it claims to be.",["qc","fd","ra"]],["ra","Regulatory affairs","P","Prepare dossiers and answer regulators so a product can be approved and stay on the market.",["pv","qa","fd","auto","law","dev","pgd"]],["pv","Pharmacovigilance and drug safety","P","Collect, assess and report adverse events after a drug reaches patients.",["ra","cr","mc","auto","ai","cdm"]],["cr","Clinical research (CRA, CRC)","P","Run and monitor clinical trials from site start-up to close-out.",["pv","cdm","mw","ma","pgd"]],["mw","Medical writing","P","Write protocols, study reports and regulatory documents with scientific accuracy.",["cr","ra","ma","creator"]],["ma","Medical affairs","P","Be the scientific bridge between a company and doctors, usually after a higher degree.",["cr","mw","sm","heor"]],["sc","Supply chain and procurement","P","Plan sourcing, inventory and distribution of medicines.",["mfg","da","bd"]],["cro","CRO and CDMO careers","P","Work for the contract firms that run trials or manufacture for other companies.",["cr","fd","mfg","pv"]],["hp","Hospital and clinical pharmacy","C","Work with doctors and patients on dispensing, counselling and drug-use review.",["gov","ph","pgd"]],["cp","Community pharmacy and retail","C","Run or manage a pharmacy, from counselling to inventory to licences.",["startup","hp"]],["gov","Government roles","C","Drug inspector, state and central pharmacist posts, armed forces and regulators' offices.",["hp","ra","ph"]],["ph","Public health","C","Programmes, immunisation, essential medicines and health systems work.",["mphd","hp","heor"]],["cadd","Pharmacoinformatics and CADD","T","Use computation to design and screen molecules before a lab touches them.",["ai","bio","pbpk","fd"]],["pbpk","Computational pharmaceutics and PBPK modelling","T","Simulate how a drug moves through a virtual body to guide formulation and dosing.",["cadd","fd","ra","ai","mph","abroad"]],["bio","Bioinformatics","T","Analyse genes, proteins and omics data to find targets and biomarkers.",["cadd","ai","da"]],["cdm","Clinical data management and biostatistics","T","Clean, structure and analyse trial data with tools like SAS and R.",["cr","da","pv"]],["ai","AI in drug discovery and pharma","T","Apply machine learning and language models to molecules, trials, safety and operations.",["cadd","pbpk","bio","da","auto","startup"]],["hi","Health informatics and healthtech","T","Build and run systems for records, e-prescribing and digital care.",["da","startup","mc","ph"]],["da","Pharma data analytics","T","Turn sales, supply and clinical data into decisions with SQL, Python and dashboards.",["ai","cdm","mr","sc","hi"]],["auto","Regulatory and safety automation","T","Automate case intake, document checks and submissions with software and AI.",["pv","ra","qa","ai"]],["mc","Medical coding","T","Translate diagnoses and procedures into standard codes such as ICD.",["hi","pv"]],["heor","Health economics and outcomes research (HEOR)","B","Show whether a treatment is worth its cost, using evidence and models.",["ma","mr","ph","da"]],["mr","Market research and healthcare consulting","B","Size markets and advise companies on strategy.",["heor","da","bd","mba"]],["sm","Pharma sales and marketing","B","Medical representative to brand manager roles.",["ma","bd","mba"]],["bd","Business development and licensing","B","Find, evaluate and negotiate deals for molecules and products.",["mr","sm","ip","sc"]],["ip","Patents and IP","B","Protect inventions. B.Pharm graduates can sit the patent agent exam.",["law","bd","fd"]],["law","Pharma law and compliance","B","Drug and cosmetics regulation, contracts and ethics, often with a law degree.",["ra","ip"]],["mph","M.Pharm (GPAT) or NIPER (NIPER JEE)","H","Specialise in pharmaceutics, pharmacology, analysis and more.",["pbpk","fd","academia","abroad"]],["mba","MBA in pharma or healthcare management","H","Move into management, marketing and strategy.",["sm","mr","bd"]],["abroad","MS or PhD abroad","H","Research degrees in pharmaceutical sciences, pharmacometrics or data science.",["pbpk","ai","mph","academia"]],["mphd","MPH and public health masters","H","Population health, policy and epidemiology.",["ph","heor"]],["pgd","PG diplomas and certifications","H","Regulatory affairs, clinical research and pharmacovigilance short courses.",["ra","cr","pv","hp"]],["academia","Teaching and academia","H","Lecturer to professor, after M.Pharm and usually a PhD.",["mph","abroad"]],["startup","Pharma or healthtech startup","E","Build a product or service at the gap between pharmacy and technology.",["ai","hi","cp","creator"]],["nutra","Nutraceuticals and cosmetics","E","Formulate, register and market supplements and personal-care products.",["fd","ra"]],["dev","Medical devices","E","Regulatory, quality and clinical roles for devices and diagnostics.",["ra","qa"]],["creator","Education and content creation","E","Teach pharmacy and health topics online, and build an audience.",["startup","mw"]]];
+  var CL={all:'All',P:'Pharma industry',C:'Clinical and care',T:'Tech and AI',B:'Business and policy',H:'Higher studies',E:'Own venture and other'};
+  var cf='all', cq='', csel=null;
+  var byId={}; CM.forEach(function(x){byId[x[0]]=x});
+  function cmRender(){
+    var bar='';Object.keys(CL).forEach(function(k){bar+='<button type="button" class="chip" aria-pressed="'+(k===cf)+'" data-f="'+k+'" style="'+(k===cf?'background:var(--ink);color:var(--bg)':'')+'">'+CL[k]+'</button>'});
+    bar+='<input id="cmq" type="search" placeholder="Search, e.g. regulatory, AI, PhD" aria-label="Search careers" value="'+cq.replace(/"/g,'&quot;')+'">';
+    var focus=document.activeElement&&document.activeElement.id==='cmq';
+    $('cmbar').innerHTML=bar;
+    var rel=csel?byId[csel][4]:[];
+    var g='';
+    CM.forEach(function(x){
+      if(cf!=='all'&&x[2]!==cf)return;
+      if(cq&&(x[1]+' '+x[3]).toLowerCase().indexOf(cq.toLowerCase())<0)return;
+      var cls='cc'+(x[0]===csel?' sel':'')+(csel&&rel.indexOf(x[0])>=0?' rel':'')+(csel&&x[0]!==csel&&rel.indexOf(x[0])<0&&byId[x[0]][4].indexOf(csel)<0?' dim':'');
+      g+='<button type="button" class="'+cls+'" data-id="'+x[0]+'"><span class="tag">'+CL[x[2]]+'</span><b>'+x[1]+'</b><span>'+x[3]+'</span></button>';
+    });
+    $('cmgrid').innerHTML=g||'<p>No match. Try a shorter word.</p>';
+    $('cminfo').textContent=csel?byId[csel][1]+' connects to: '+rel.map(function(i){return byId[i][1]}).join(', ')+'.':'Showing '+document.querySelectorAll('#cmgrid .cc').length+' of '+CM.length+' options.';
+    document.querySelectorAll('#cmbar .chip').forEach(function(b){b.addEventListener('click',function(){cf=b.dataset.f;cmRender();})});
+    var qi=$('cmq');qi.addEventListener('input',function(){cq=qi.value;cmRender();});
+    if(focus){qi.focus();qi.setSelectionRange(cq.length,cq.length);}
+    document.querySelectorAll('#cmgrid .cc').forEach(function(b){b.addEventListener('click',function(){csel=(csel===b.dataset.id)?null:b.dataset.id;cmRender();});});
+    if(typeof netRender==='function'&&pos.mfg)netRender();
+  }
+  var CC={P:'var(--blue)',C:'var(--g)',T:'var(--signal)',B:'var(--v)',H:'var(--ink)',E:'var(--muted)'};
+  var ST={"mfg":"B.Pharm plus GMP basics; an internship at a plant.","qa":"Learn GMP, SOP writing and audits; QA trainee roles.","qc":"Get hands-on with HPLC, GC and dissolution in a lab internship.","fd":"Practise dosage-form design; an M.Pharm in pharmaceutics helps.","ard":"Method development and validation; read the ICH guidelines.","ra":"Learn CTD dossiers and ICH guidelines; a regulatory affairs diploma helps.","pv":"Learn MedDRA, case processing and GVP; short PV courses.","cr":"ICH-GCP training; CRC or CRA trainee roles.","mw":"Write sample summaries from papers and build a small portfolio.","ma":"Usually after M.Pharm, Pharm.D or PhD; build scientific communication.","sc":"Learn inventory, ERP basics and logistics; supply-chain internships.","cro":"Apply to trainee roles in clinical, bioanalytical or formulation teams.","hp":"Clinical pharmacy internship; Pharm.D or a PG diploma strengthens it.","cp":"Hold a registered pharmacist licence; learn inventory and billing software.","gov":"Watch official notifications for drug inspector and pharmacist exams; prepare early.","ph":"Volunteer with health programmes; consider an MPH.","cadd":"Learn molecular docking tools and Python; an M.Pharm or bioinformatics course helps.","pbpk":"Start with PK basics, then a free tool such as PK-Sim and published models. An M.Pharm helps.","bio":"Learn Python or R, genomics basics and public databases.","cdm":"Learn SAS or R and clinical data standards; a CDM diploma.","ai":"Python, data handling, then small pharma projects on GitHub.","hi":"Learn health data standards and basic SQL; digital health internships.","da":"SQL, Excel, Python and Power BI; build a small pharma dashboard.","auto":"Learn the process first (PV or regulatory), then scripting and AI tools.","mc":"A certified coder course in ICD; accuracy matters most.","heor":"Learn evidence synthesis and basic modelling; health economics short courses.","mr":"Excel, market data tools and clear writing; analyst trainee roles.","sm":"Communication and product knowledge; a medical representative role is a common start.","bd":"Learn the product pipeline and deal terms; usually after industry experience or an MBA.","ip":"Study patent basics and prepare for the patent agent exam.","law":"Build regulation knowledge first; an LLB or compliance diploma can follow.","mph":"Prepare for GPAT or NIPER JEE; choose a specialisation early.","mba":"Prepare for CAT or similar exams; pick a pharma or healthcare focus.","abroad":"Build research experience and papers, take the required tests, and plan funding early.","mphd":"Prepare for entrance exams; build community-health experience.","pgd":"Pick the diploma that matches your target role and check it is recognised.","academia":"M.Pharm first, then a PhD; check PCI rules for faculty eligibility.","startup":"Find a real problem, build a small prototype and test it with users.","nutra":"Learn FSSAI rules and labelling; formulation basics.","dev":"Learn medical device rules and quality standards such as ISO 13485.","creator":"Pick one topic, teach it consistently and keep sources accurate."};
+  var TOP='https://topmate.io/deepansh_dubey';
+  var pos={};
+  (function(){
+    var keys=['P','C','T','B','H','E'], cx=500, cy=380, R=265;
+    keys.forEach(function(k,ki){
+      var a=-Math.PI/2+ki*2*Math.PI/6, ccx=cx+R*Math.cos(a)*1.3, ccy=cy+R*Math.sin(a)*1.0;
+      var m=CM.filter(function(x){return x[2]===k});
+      var r=m.length>8?105:m.length>4?80:58;
+      m.forEach(function(x,i){var b=2*Math.PI*i/m.length+a;pos[x[0]]=[ccx+r*Math.cos(b),ccy+r*Math.sin(b)];});
+      pos['_'+k]=[ccx,ccy];
+    });
+    var lg='';Object.keys(CL).forEach(function(k){if(k!=='all')lg+='<span><i style="background:'+CC[k]+'"></i>'+CL[k]+'</span>'});
+    $('legend').innerHTML=lg;
+  })();
+  function netRender(){
+    var rel=csel?byId[csel][4]:[], h='';
+    var seen={};
+    CM.forEach(function(x){x[4].forEach(function(l){var key=[x[0],l].sort().join('|');if(seen[key])return;seen[key]=1;
+      var on=csel&&(x[0]===csel||l===csel);
+      h+='<line class="edge'+(on?' on':'')+'" x1="'+pos[x[0]][0].toFixed(0)+'" y1="'+pos[x[0]][1].toFixed(0)+'" x2="'+pos[l][0].toFixed(0)+'" y2="'+pos[l][1].toFixed(0)+'"/>';});});
+    ['P','C','T','B','H','E'].forEach(function(k){h+='<text class="cl" x="'+pos['_'+k][0].toFixed(0)+'" y="'+(pos['_'+k][1]+5).toFixed(0)+'">'+CL[k]+'</text>';});
+    CM.forEach(function(x){
+      var isRel=csel&&(rel.indexOf(x[0])>=0||byId[x[0]][4].indexOf(csel)>=0), sel=x[0]===csel, dim=csel&&!sel&&!isRel;
+      var rr=sel?15:isRel?12:9;
+      h+='<circle class="nd n-'+x[2]+(sel?' sel':'')+(dim?' dim':'')+'" data-id="'+x[0]+'" cx="'+pos[x[0]][0].toFixed(0)+'" cy="'+pos[x[0]][1].toFixed(0)+'" r="'+rr+'" tabindex="0" role="button" aria-label="'+x[1]+'"><title>'+x[1]+'</title></circle>';
+    });
+    CM.forEach(function(x){ if(csel&&(x[0]===csel||rel.indexOf(x[0])>=0||byId[x[0]][4].indexOf(csel)>=0)) h+='<text class="nl" x="'+pos[x[0]][0].toFixed(0)+'" y="'+(pos[x[0]][1]-(x[0]===csel?22:17)).toFixed(0)+'">'+x[1].split(' (')[0]+'</text>'; });
+    $('netsvg').innerHTML=h;
+    document.querySelectorAll('#netsvg .nd').forEach(function(n){
+      var go=function(){csel=(csel===n.dataset.id)?null:n.dataset.id;cmRender();};
+      n.addEventListener('click',go);
+      n.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go();}});
+    });
+    var p=$('ninfo');
+    if(!csel){p.innerHTML='<h3>Tap a dot</h3><p>Every dot is a career after B.Pharm. Lines join careers that share skills or lead into each other. Tap one to read a short brief and see what it connects to.</p><a class="book" href="'+TOP+'" target="_blank" rel="noopener">Book a consultation</a>';return;}
+    var c=byId[csel];
+    p.innerHTML='<span class="tg">'+CL[c[2]]+'</span><h3>'+c[1]+'</h3><p>'+c[3]+'</p><p><b>Start with:</b> '+ST[csel]+'</p><div class="jump" aria-label="Connected careers">'+c[4].map(function(i){return '<button type="button" data-j="'+i+'">'+byId[i][1].split(' (')[0]+'</button>'}).join('')+'</div><a class="book" href="'+TOP+'" target="_blank" rel="noopener">Book a consultation about this path</a>';
+    p.querySelectorAll('[data-j]').forEach(function(b){b.addEventListener('click',function(){csel=b.dataset.j;cmRender();});});
+  }
+  cmRender();
+
+  /* ---- ask / check / apply ---- */
+  var MAIL='drx.deepanshdubey@gmail.com', LI='https://www.linkedin.com/in/deepanshdubey1';
+  var am=null;
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+  function copyText(text,statEl){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){statEl.textContent='Message copied.'},function(){statEl.textContent='Copy failed. Select the message and copy it.'});}
+    else statEl.textContent='Copy is not available here. Select the message and copy it.';
+  }
+  function panel(m){
+    var p=$('apanel');
+    if(am===m){am=null;p.hidden=true;document.querySelectorAll('.act button').forEach(function(b){b.setAttribute('aria-pressed','false')});return;}
+    am=m;p.hidden=false;
+    document.querySelectorAll('.act button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.m===m))});
+    var h='<label for="aName">Your name</label><input id="aName" type="text" autocomplete="name">';
+    if(m==='ask') h+='<label for="aMsg">Your question for Deepansh</label><textarea id="aMsg" placeholder="For example: can you run the PBPK workshop for our M.Pharm batch?"></textarea><div class="arow"><a class="abtn" id="aGo" href="'+LI+'" target="_blank" rel="noopener">Copy and open LinkedIn</a></div><p class="astat" id="aStat" role="status"></p><p class="note">LinkedIn opens my profile in a new tab. Paste the copied message into a chat with me.</p>';
+    if(m==='check') h+='<label for="aWhat">What should I check?</label><select id="aWhat"><option>My LinkedIn profile</option><option>My resume</option><option>An AI answer I am unsure about</option><option>My research idea</option></select><label for="aMsg">Link or text to check</label><textarea id="aMsg" placeholder="Paste a link or the text here"></textarea><div class="arow"><a class="abtn" id="aGo" href="#" target="_blank" rel="noopener">Email it to Deepansh</a><button class="abtn alt" type="button" id="aCopy">Copy message</button></div><p class="astat" id="aStat" role="status"></p><p class="note">If your mail app does not open, copy the message and send it to '+MAIL+'.</p>';
+    if(m==='apply') h+='<label for="aWhat">I want to apply for</label><select id="aWhat"><option>The computational pharmaceutics workshop</option><option>AI as your lab partner</option><option>The LinkedIn profile clinic</option><option>A guest lecture or mentoring</option><option>A research or project collaboration</option></select><label for="aMsg">A line about your group and a preferred date</label><textarea id="aMsg" placeholder="For example: 60 M.Pharm students, any Saturday in December"></textarea><div class="arow"><a class="abtn" id="aGo" href="#" target="_blank" rel="noopener">Email my application</a><button class="abtn alt" type="button" id="aCopy">Copy message</button></div><p class="astat" id="aStat" role="status"></p><p class="note">If your mail app does not open, copy the message and send it to '+MAIL+'.</p>';
+    p.innerHTML=h;
+    function build(){
+      var name=$('aName').value||'[Your name]', msg=$('aMsg').value||'', what=$('aWhat')?$('aWhat').value:'';
+      var subj,body;
+      if(m==='ask'){subj='Question from '+name;body='Hi Deepansh,\n\n'+msg+'\n\n'+name;}
+      if(m==='check'){subj='Please check: '+what.toLowerCase();body='Hi Deepansh,\n\nPlease check '+what.toLowerCase()+':\n\n'+msg+'\n\nThanks,\n'+name;}
+      if(m==='apply'){subj='Application: '+what;body='Hi Deepansh,\n\nI would like to apply for: '+what+'.\n\n'+msg+'\n\n'+name;}
+      return {subj:subj,body:body.replace(/\\n/g,'\n')};
+    }
+    function sync(){var b=build(); if(m!=='ask')$('aGo').href='mailto:'+MAIL+'?subject='+encodeURIComponent(b.subj)+'&body='+encodeURIComponent(b.body);}
+    p.querySelectorAll('input,textarea,select').forEach(function(e){e.addEventListener('input',sync);e.addEventListener('change',sync);});
+    sync();
+    $('aGo').addEventListener('click',function(){var b=build();copyText('Subject: '+b.subj+'\n\n'+b.body,$('aStat'));if(m!=='ask')$('aStat').textContent='The message is copied. If no mail app opened, paste it into an email to '+MAIL+'.';});
+    if($('aCopy'))$('aCopy').addEventListener('click',function(){var b=build();copyText('Subject: '+b.subj+'\n\n'+b.body,$('aStat'));});
+  }
+  document.querySelectorAll('.act button').forEach(function(b){b.addEventListener('click',function(){panel(b.dataset.m)})});
+
+  /* ---- reply composer ---- */
+  var names={s1:'the computational pharmaceutics workshop (half day)',s2:'the AI as your lab partner session (60 minutes)',s3:'the LinkedIn profile clinic (90 minutes)',w1:'guest lectures for the Pharmacy department',w2:'joint sessions with the placement cell',w3:'student mentoring as a visiting resource person',w4:'research and paper-writing guidance',w5:'a modelling or AI project collaboration'};
+  function list(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];}
+  function compose(){
+    var pil=['s1','s2','s3'].filter(function(k){return $(k).checked}).map(function(k){return names[k]});
+    var oth=['w1','w2','w3','w4','w5'].filter(function(k){return $(k).checked}).map(function(k){return names[k]});
+    var d=$('date').value, ds=d?new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'a date we can fix together';
+    var t='Hi Deepansh,\n\n';
+    t+=pil.length?'Let us start with a pilot: '+list(pil)+', for '+$('batch').value+', around '+ds+'.':'Let us talk about how we can work together.';
+    if(oth.length)t+='\n\nI would also like to explore '+list(oth)+'.';
+    t+='\n\nPlease share what you need from our side, and we will agree the terms when we meet.\n\n'+($('who').value||'[Your name]')+($('org').value?'\n'+$('org').value:'');
+    $('msg').textContent=t;
+  }
+  document.querySelectorAll('.composer input,.composer select').forEach(function(e){e.addEventListener('input',compose);e.addEventListener('change',compose);});
+  compose();
+  function copy(text,done){
+    function fb(){var r=document.createRange();var n=$('msg');r.selectNodeContents(n);var s=window.getSelection();s.removeAllRanges();s.addRange(r);done('Select and copy the text above.');}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done('Copied. Paste it into WhatsApp or email.')},fb);}else fb();
+  }
+  $('copyBtn').addEventListener('click',function(){copy($('msg').textContent,function(m){$('status').textContent=m})});
+  document.querySelectorAll('.cp').forEach(function(b){b.addEventListener('click',function(){
+    var t=b.dataset.copy; if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){b.textContent='Copied'},function(){})}
+  })});
+})();
+</script>
