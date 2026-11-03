@@ -364,7 +364,8 @@ footer b{color:var(--ink)}
         <span class="len">90 minutes</span>
         <h3>The LinkedIn profile clinic</h3>
         <p>A headline that says what they do, projects a recruiter can open, and a network built with short, honest notes. Every student edits their own profile in the room.</p>
-        <ul class="steps"><li>Headline</li><li>Proof</li><li>Network</li></ul>
+        <div class="act" role="group" aria-label="Profile clinic steps"><button type="button" data-c="Headline" aria-pressed="false">Headline</button><button type="button" data-c="Proof" aria-pressed="false">Proof</button><button type="button" data-c="Network" aria-pressed="false">Network</button></div>
+        <div class="apanel" id="cpanel" hidden></div>
       </article>
     </div>
     <div class="doors">
@@ -397,13 +398,13 @@ footer b{color:var(--ink)}
         <div><label for="batch" style="font-weight:700;display:block;margin-bottom:6px">Group</label>
           <select id="batch"><option>B.Pharm final year</option><option>B.Pharm third year</option><option>D.Pharm</option><option>M.Pharm</option><option>PhD scholars</option><option>Scientists and industry team</option><option>Venture or startup team</option><option>Mixed group</option></select></div>
         <div><label for="date" style="font-weight:700;display:block;margin-bottom:6px">Preferred date</label><input type="date" id="date"></div>
-        <div><label for="who" style="font-weight:700;display:block;margin-bottom:6px">Your name</label><input type="text" id="who" placeholder="Your name"></div>
+        <div><label for="whoName" style="font-weight:700;display:block;margin-bottom:6px">Your name</label><input type="text" id="whoName" placeholder="Your name"></div>
         <div><label for="org" style="font-weight:700;display:block;margin-bottom:6px">Organisation</label><input type="text" id="org" placeholder="College, company or venture"></div>
       </div>
       <div class="r">
         <h3>Your reply</h3>
         <div class="msg" id="msg"></div>
-        <button class="btn" id="copyBtn" type="button">Copy reply</button>
+        <div class="arow"><a class="btn" id="mailBtn" href="#" target="_blank" rel="noopener">Email this reply</a><button class="btn" id="copyBtn" type="button">Copy reply</button></div>
         <p class="status" id="status" role="status"></p>
       </div>
     </div>
@@ -625,7 +626,7 @@ footer b{color:var(--ink)}
     if(m==='apply') h+='<label for="aWhat">I want to apply for</label><select id="aWhat"><option>The computational pharmaceutics workshop</option><option>AI as your lab partner</option><option>The LinkedIn profile clinic</option><option>A guest lecture or mentoring</option><option>A research or project collaboration</option></select><label for="aMsg">A line about your group and a preferred date</label><textarea id="aMsg" placeholder="For example: 60 M.Pharm students, any Saturday in December"></textarea><div class="arow"><a class="abtn" id="aGo" href="#" target="_blank" rel="noopener">Email my application</a><button class="abtn alt" type="button" id="aCopy">Copy message</button></div><p class="astat" id="aStat" role="status"></p><p class="note">If your mail app does not open, copy the message and send it to '+MAIL+'.</p>';
     p.innerHTML=h;
     function build(){
-      var name=$('aName').value||'[Your name]', msg=$('aMsg').value||'', what=$('aWhat')?$('aWhat').value:'';
+      var name=$('aName').value||'(your name)', msg=$('aMsg').value||'', what=$('aWhat')?$('aWhat').value:'';
       var subj,body;
       if(m==='ask'){subj='Question from '+name;body='Hi Deepansh,\n\n'+msg+'\n\n'+name;}
       if(m==='check'){subj='Please check: '+what.toLowerCase();body='Hi Deepansh,\n\nPlease check '+what.toLowerCase()+':\n\n'+msg+'\n\nThanks,\n'+name;}
@@ -638,7 +639,25 @@ footer b{color:var(--ink)}
     $('aGo').addEventListener('click',function(){var b=build();copyText('Subject: '+b.subj+'\n\n'+b.body,$('aStat'));if(m!=='ask')$('aStat').textContent='The message is copied. If no mail app opened, paste it into an email to '+MAIL+'.';});
     if($('aCopy'))$('aCopy').addEventListener('click',function(){var b=build();copyText('Subject: '+b.subj+'\n\n'+b.body,$('aStat'));});
   }
-  document.querySelectorAll('.act button').forEach(function(b){b.addEventListener('click',function(){panel(b.dataset.m)})});
+  document.querySelectorAll('.act button[data-m]').forEach(function(b){b.addEventListener('click',function(){panel(b.dataset.m)})});
+  /* ---- profile clinic: Headline / Proof / Network -> email ---- */
+  var cm=null;
+  var CLN={Headline:['Write your headline','My current headline is:','Help me write a LinkedIn headline that says what I do'],Proof:['Add proof of work','Project or link I want to show:','Help me turn my project into proof on LinkedIn'],Network:['Build your network','Who I want to connect with:','Help me write short, honest connection notes']};
+  function clinic(k){
+    var p=$('cpanel'), btns=document.querySelectorAll('.act button[data-c]');
+    if(cm===k){cm=null;p.hidden=true;btns.forEach(function(b){b.setAttribute('aria-pressed','false')});return;}
+    cm=k;p.hidden=false;
+    btns.forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.c===k))});
+    var c=CLN[k];
+    p.innerHTML='<label for="cName">Your name</label><input id="cName" type="text" autocomplete="name"><label for="cMsg">'+c[1]+'</label><textarea id="cMsg" placeholder="Write here"></textarea><div class="arow"><a class="abtn" id="cGo" href="#" target="_blank" rel="noopener">Email it to Deepansh</a><button class="abtn alt" type="button" id="cCopy">Copy message</button></div><p class="astat" id="cStat" role="status"></p><p class="note">If your mail app does not open, copy the message and send it to '+MAIL+'.</p>';
+    function cb(){var n=$('cName').value||'(name)';var s='LinkedIn clinic ('+k+'): '+n;var b='Hi Deepansh,\n\n'+c[2]+'.\n\n'+c[1]+'\n'+$('cMsg').value+'\n\nThanks,\n'+n;b=b.replace(/\\n/g,'\n');return {s:s,b:b};}
+    function cs(){var m=cb();$('cGo').href='mailto:'+MAIL+'?subject='+encodeURIComponent(m.s)+'&body='+encodeURIComponent(m.b);}
+    p.querySelectorAll('input,textarea').forEach(function(e){e.addEventListener('input',cs);});
+    cs();
+    $('cGo').addEventListener('click',function(){var m=cb();copyText('Subject: '+m.s+'\n\n'+m.b,$('cStat'));$('cStat').textContent='The message is copied. If no mail app opened, paste it into an email to '+MAIL+'.';});
+    $('cCopy').addEventListener('click',function(){var m=cb();copyText('Subject: '+m.s+'\n\n'+m.b,$('cStat'));});
+  }
+  document.querySelectorAll('.act button[data-c]').forEach(function(b){b.addEventListener('click',function(){clinic(b.dataset.c)})});
 
   /* ---- reply composer ---- */
   var names={s1:'the computational pharmaceutics workshop (half day)',s2:'the AI as your lab partner session (60 minutes)',s3:'the LinkedIn profile clinic (90 minutes)',w1:'guest lectures for the Pharmacy department',w2:'joint sessions with the placement cell',w3:'student mentoring as a visiting resource person',w4:'research and paper-writing guidance',w5:'a modelling or AI project collaboration'};
@@ -650,8 +669,9 @@ footer b{color:var(--ink)}
     var t='Hi Deepansh,\n\n';
     t+=pil.length?'Let us start with a pilot: '+list(pil)+', for '+$('batch').value+', around '+ds+'.':'Let us talk about how we can work together.';
     if(oth.length)t+='\n\nI would also like to explore '+list(oth)+'.';
-    t+='\n\nPlease share what you need from our side, and we will agree the terms when we meet.\n\n'+($('who').value||'[Your name]')+($('org').value?'\n'+$('org').value:'');
+    t+='\n\nPlease share what you need from our side, and we will agree the terms when we meet.\n\n'+($('whoName').value||'(your name)')+($('org').value?'\n'+$('org').value:'');
     $('msg').textContent=t;
+    $('mailBtn').href='mailto:'+MAIL+'?subject='+encodeURIComponent('Workshop: '+$('batch').value)+'&body='+encodeURIComponent(t);
   }
   document.querySelectorAll('.composer input,.composer select').forEach(function(e){e.addEventListener('input',compose);e.addEventListener('change',compose);});
   compose();
